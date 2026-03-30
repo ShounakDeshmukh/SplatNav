@@ -103,8 +103,8 @@ WantedBy=default.target
 EOF
 fi
 
-echo "[5b/6] Enabling user lingering so VNC can stay up after SSH logout..."
-sudo loginctl enable-linger "$USER"
+echo "[5b/6] Disabling user lingering so VNC stops after logout..."
+sudo loginctl disable-linger "$USER" || true
 
 git config --global user.name "Shounak Deshmukh"
 git config --global user.email "shounsach@gmail.com"
@@ -112,7 +112,8 @@ git config --global user.email "shounsach@gmail.com"
 echo "[6/6] Done."
 echo "Open a new shell (or run: newgrp docker) for docker group changes to apply."
 echo "Then run: vncpasswd"
-echo "Then enable VNC with: systemctl --user daemon-reload && systemctl --user enable --now vncserver@1"
+echo "Then start VNC for this login with: systemctl --user daemon-reload && systemctl --user start vncserver@1"
+echo "Stop it when done: systemctl --user stop vncserver@1"
 echo "For SSH from your laptop use: ssh -L 5901:localhost:5901 <user>@<vm-ip>"
 echo "Then connect your VNC client to: localhost:5901"
 echo "Verify with: docker --version && lazydocker --version && systemctl --user status vncserver@1"

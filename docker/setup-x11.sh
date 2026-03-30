@@ -26,8 +26,10 @@ else
     echo "Warning: could not extract Xauthority cookie for DISPLAY=$DISPLAY"
 fi
 
-# Prefer least-privilege local access for the container's root user.
+# Allow Docker local X11 access (common setup used by many ROS/Gazebo guides).
+# Keep this first for compatibility, then add a narrower localuser rule below.
 if command -v xhost >/dev/null 2>&1; then
+    xhost +local:docker >/dev/null 2>&1 || true
     xhost +SI:localuser:root >/dev/null 2>&1 || true
 fi
 

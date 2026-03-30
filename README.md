@@ -98,7 +98,12 @@ Then finish VNC setup:
 ```bash
 vncpasswd
 systemctl --user daemon-reload
-systemctl --user enable --now vncserver@1
+systemctl --user start vncserver@1
+```
+
+When done for the day:
+```bash
+systemctl --user stop vncserver@1
 ```
 
 If you reboot later, you do not need to rerun `setupvm.bash`.
@@ -127,6 +132,8 @@ export DISPLAY=:1
 docker compose up -d
 docker exec -it ros2_jackal_nerf bash
 ```
+
+`./setup-x11.sh` handles X11 permissions (`xhost +local:docker`) and prepares `/tmp/.docker.xauth`.
 
 Inside the container, set up the isolated math environments:
 ```bash
