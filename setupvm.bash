@@ -106,6 +106,9 @@ fi
 echo "[5b/6] Enabling user lingering so VNC can stay up after SSH logout..."
 sudo loginctl enable-linger "$USER"
 
+git config --global user.name "Shounak Deshmukh"
+git config --global user.email "shounsach@gmail.com"
+
 echo "[6/6] Done."
 echo "Open a new shell (or run: newgrp docker) for docker group changes to apply."
 echo "Then run: vncpasswd"
