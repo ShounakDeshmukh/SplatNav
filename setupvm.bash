@@ -15,8 +15,30 @@ sudo sed -i 's/^#\?AllowTcpForwarding.*/AllowTcpForwarding yes/' /etc/ssh/sshd_c
 sudo systemctl enable --now ssh
 sudo systemctl restart ssh
 
-echo "[2/6] Installing Docker engine (docker.io)..."
-sudo apt install -y docker.io
+echo "[2/6] Installing Docker Engine from Docker official apt repository..."
+
+# Remove distro-provided packages that may conflict with Docker CE.
+for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
+	if dpkg -s "$pkg" >/dev/null 2>&1; then
+		sudo apt remove -y "$pkg"
+	fi
+done
+
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 sudo systemctl enable --now docker
 
 if ! getent group docker >/dev/null; then
