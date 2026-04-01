@@ -94,6 +94,8 @@ chmod +x setupvm.bash
 newgrp docker
 ```
 
+`setupvm.bash` installs Docker, NVIDIA Container Toolkit, and configures Docker runtime via `nvidia-ctk`.
+
 Then finish VNC setup:
 ```bash
 vncpasswd

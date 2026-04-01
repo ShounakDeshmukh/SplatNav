@@ -46,16 +46,20 @@ if ! getent group docker >/dev/null; then
 fi
 sudo usermod -aG docker "$USER"
 
-echo "[3/6] Installing NVIDIA Container Toolkit..."
-distribution="$(. /etc/os-release; echo "${ID}${VERSION_ID}")"
+echo "[3/6] Installing NVIDIA Container Toolkit (official NVIDIA apt repo)..."
+sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
 	| sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-curl -fsSL "https://nvidia.github.io/libnvidia-container/${distribution}/libnvidia-container.list" \
+curl -fsSL https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
 	| sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
 	| sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list >/dev/null
 
 sudo apt update
-sudo apt install -y nvidia-container-toolkit
+sudo apt install -y \
+	nvidia-container-toolkit \
+	nvidia-container-toolkit-base \
+	libnvidia-container-tools \
+	libnvidia-container1
 sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 
@@ -116,4 +120,6 @@ echo "Then start VNC for this login with: systemctl --user daemon-reload && syst
 echo "Stop it when done: systemctl --user stop vncserver@1"
 echo "For SSH from your laptop use: ssh -L 5901:localhost:5901 <user>@<vm-ip>"
 echo "Then connect your VNC client to: localhost:5901"
-echo "Verify with: docker --version && lazydocker --version && systemctl --user status vncserver@1"
+echo "Verify with: docker --version && nvidia-ctk --version && lazydocker --version"
+echo "GPU test (if drivers are installed): docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi"
+echo "VNC status: systemctl --user status vncserver@1"
