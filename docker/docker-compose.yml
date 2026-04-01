@@ -4,8 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: ros2_jackal_nerf
-    ports:
-      - "8765:8765" # Foxglove default WebSocket port
+    # Required for SSH X11 forwarding (DISPLAY=localhost:10.0):
+    # container must share host network namespace so localhost tunnel is reachable.
+    network_mode: host
     ipc: host
     # runtime: nvidia
     # environment:

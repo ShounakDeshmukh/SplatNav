@@ -114,7 +114,7 @@ cd docker
 docker compose build
 ```
 
-### 3. SSH from your laptop and open the render tunnel
+### 3. Option A (VNC): SSH from your laptop and open the render tunnel
 ```bash
 ssh -L 5901:localhost:5901 <user>@<vm-ip>
 ```
@@ -134,6 +134,30 @@ docker exec -it ros2_jackal_nerf bash
 ```
 
 `./setup-x11.sh` handles X11 permissions (`xhost +local:docker`) and prepares `/tmp/.docker.xauth`.
+
+### 5. Option B (No VNC): SSH X11 forwarding directly to your laptop
+From your laptop:
+```bash
+ssh -Y <user>@<vm-ip>
+```
+
+On the VM (inside that same SSH session):
+```bash
+echo "$DISPLAY"            # expected: localhost:10.0 (or similar)
+cd /home/shooty/ros2-nerf-jackal/docker
+./setup-x11.sh
+docker compose up -d
+docker exec -it ros2_jackal_nerf bash
+```
+
+Inside the container, test GUI first:
+```bash
+xeyes
+```
+
+Notes:
+- `docker-compose.yml` uses `network_mode: host`, which is required for SSH X11 forwarding because `localhost:10.0` must resolve to the host SSH tunnel, not container loopback.
+- `setup-x11.sh` supports both local/VNC displays (`:0`, `:1`) and SSH-forwarded displays (`localhost:10.0`).
 
 Inside the container, set up the isolated math environments:
 ```bash
