@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     git \
     python3-pip \
+    python3-yaml \
     python3-colcon-common-extensions \
     build-essential \
     cmake \
@@ -141,9 +142,8 @@ RUN wget -qO /tmp/miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-la
     /opt/conda/bin/conda config --set auto_activate_base false && \
     /opt/conda/bin/conda init bash
 
-# Add conda to PATH for interactive shells
-RUN echo "export PATH=/opt/conda/bin:\$PATH" >> /root/.bashrc && \
-    echo "source /opt/conda/etc/profile.d/conda.sh" >> /root/.bashrc
+# Make conda available in interactive shells without forcing conda python globally.
+RUN echo "source /opt/conda/etc/profile.d/conda.sh" >> /root/.bashrc
 
 # -----------------------
 # Default command
