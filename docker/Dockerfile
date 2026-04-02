@@ -3,20 +3,28 @@ FROM osrf/ros:jazzy-desktop
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PATH="/opt/conda/bin:${PATH}"
 
 # -----------------------
 # System dependencies
 # -----------------------
 RUN apt-get update && apt-get install -y \
     curl \
+    wget \
     git \
     python3-pip \
     python3-colcon-common-extensions \
     build-essential \
     cmake \
+    ninja-build \
     pkg-config \
     libssl-dev \
     libclang-dev \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
     python3-vcstool \
     ros-jazzy-example-interfaces \
     ros-jazzy-test-msgs \
@@ -37,6 +45,15 @@ RUN apt-get update && apt-get install -y \
 # Install colcon plugins for Rust
 # -----------------------
 RUN pip install --break-system-packages colcon-cargo colcon-ros-cargo
+
+# -----------------------
+# Install Miniconda for GauSS-MI/PINGS Python environments
+# -----------------------
+RUN wget -qO /tmp/miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    bash /tmp/miniconda.sh -b -p /opt/conda && \
+    rm -f /tmp/miniconda.sh && \
+    /opt/conda/bin/conda config --set auto_activate_base false && \
+    /opt/conda/bin/conda init bash
 
 # -----------------------
 # Install Rust
@@ -85,10 +102,38 @@ RUN mkdir -p /workspace/src
 WORKDIR /workspace
 
 # -----------------------
+# Helper to create GauSS-MI conda env from mounted submodule
+# -----------------------
+RUN cat <<'EOF' > /usr/local/bin/setup-gaussmi-env
+#!/usr/bin/env bash
+set -euo pipefail
+
+ENV_FILE="/workspace/src/GauSS-MI-ros2/environment.yml"
+
+if [[ ! -f "${ENV_FILE}" ]]; then
+    echo "GauSS-MI env file not found at ${ENV_FILE}." >&2
+    echo "Make sure submodules are initialized and /workspace is mounted." >&2
+    exit 1
+fi
+
+if conda env list | awk '{print $1}' | grep -qx "GauSS-MI"; then
+    echo "Conda env GauSS-MI already exists."
+    exit 0
+fi
+
+echo "Creating GauSS-MI conda environment from ${ENV_FILE} ..."
+conda env create -f "${ENV_FILE}"
+echo "Done. Activate with: conda activate GauSS-MI"
+EOF
+
+RUN chmod +x /usr/local/bin/setup-gaussmi-env
+
+# -----------------------
 # Source ROS automatically (Both Jazzy and the Rust underlay)
 # -----------------------
 RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc && \
     echo "source /opt/ros2_rust_ws/install/setup.bash" >> /root/.bashrc && \
+    echo "source /opt/conda/etc/profile.d/conda.sh" >> /root/.bashrc && \
     echo "alias cls=clear" >> /root/.bashrc
 
 # -----------------------
