@@ -82,6 +82,13 @@ rust-splat-nav/
 
 ## Setup Instructions
 
+### 0. Clone submodules
+After cloning the repository, initialize and fetch submodules:
+
+```bash
+git submodule update --init --recursive
+```
+
 ### 1. Prepare the VM (required on every brand-new barebones VM)
 Any time you create a new barebones VM, run this first before anything else.
 On the same VM, you generally only do this one time.
