@@ -7,9 +7,10 @@ default:
 build:
     colcon build --symlink-install
 
-# Build only the GauSS-MI package.
+# Build only the GauSS-MI package (Inside Conda so Python paths are correct!)
 build-gaussmi:
     colcon build --packages-select gs_mapping --symlink-install
+    sed -i '1s|.*|#!/opt/conda/envs/GauSS-MI/bin/python3|' install/gs_mapping/lib/gs_mapping/gs_map
 
 # Run a command with ROS and ros2_rust environments sourced
 source-ros cmd:
@@ -44,7 +45,9 @@ setup-gaussmi:
     bash /workspace/src/GauSS-MI-ros2/setup-gaussmi-env.sh
 
 # Launch GauSS-MI with active reconstruction config.
-launch-gaussmi-active: (source-ros "cd /workspace && source install/setup.bash && conda activate GauSS-MI && ros2 launch gs_mapping gaussmi_active.launch.py")
+launch-gaussmi-active:
+    bash -c 'source /opt/ros/jazzy/setup.bash && source /opt/ros2_rust_ws/install/setup.bash && source /opt/conda/etc/profile.d/conda.sh && cd /workspace && source install/setup.bash && conda activate GauSS-MI && ros2 launch gs_mapping gaussmi_active.launch.py'
 
 # Launch GauSS-MI with rosbag playback config.
-launch-gaussmi-rosbag: (source-ros "cd /workspace && source install/setup.bash && conda activate GauSS-MI && ros2 launch gs_mapping gaussmi_rosbag_oildrum.launch.py")
+launch-gaussmi-rosbag:
+    bash -c 'source /opt/ros/jazzy/setup.bash && source /opt/ros2_rust_ws/install/setup.bash && source /opt/conda/etc/profile.d/conda.sh && cd /workspace && source install/setup.bash && conda activate GauSS-MI && ros2 launch gs_mapping gaussmi_rosbag_oildrum.launch.py'
