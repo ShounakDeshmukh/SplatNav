@@ -39,8 +39,12 @@ topics:
 launch-foxglove:
     ros2 launch foxglove_bridge foxglove_bridge_launch.xml
 
-# Launch GauSS-MI with active reconstruction config.
-launch-gaussmi-active: (source-ros "cd /home/sdeshmu4/RustSplatNav/ros2_ws && source install/setup.bash && ros2 launch gs_mapping gaussmi_active.launch.py")
+# Setup GauSS-MI conda environment
+setup-gaussmi:
+    /usr/local/bin/setup-gaussmi-env
 
-# Launch GauSS-MI with rosbag config.
-launch-gaussmi-rosbag: (source-ros "cd /home/sdeshmu4/RustSplatNav/ros2_ws && source install/setup.bash && ros2 launch gs_mapping gaussmi_rosbag_oildrum.launch.py")
+# Launch GauSS-MI with active reconstruction config.
+launch-gaussmi-active: (source-ros "cd /workspace && source install/setup.bash && conda activate GauSS-MI && ros2 launch gs_mapping gaussmi_active.launch.py")
+
+# Launch GauSS-MI with rosbag playback config.
+launch-gaussmi-rosbag: (source-ros "cd /workspace && source install/setup.bash && conda activate GauSS-MI && ros2 launch gs_mapping gaussmi_rosbag_oildrum.launch.py")
