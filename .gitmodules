@@ -1,3 +1,0 @@
-[submodule "ros2_ws/src/GauSS-MI-ros2"]
-	path = ros2_ws/src/GauSS-MI-ros2
-	url = https://github.com/ShounakDeshmukh/GauSS-MI-ros2
