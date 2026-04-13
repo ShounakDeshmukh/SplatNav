@@ -7,11 +7,6 @@ default:
 build:
     colcon build --symlink-install
 
-# Build only the GauSS-MI package (Inside Conda so Python paths are correct!)
-build-gaussmi:
-    colcon build --packages-select gs_mapping --symlink-install
-    sed -i '1s|.*|#!/opt/conda/envs/GauSS-MI/bin/python3|' install/gs_mapping/lib/gs_mapping/gs_map
-
 # Run a command with ROS and ros2_rust environments sourced
 source-ros cmd:
     bash --noprofile --norc -c 'if [ -f /opt/conda/etc/profile.d/conda.sh ]; then . /opt/conda/etc/profile.d/conda.sh >/dev/null 2>&1 || true; fi; while [ "${CONDA_SHLVL:-0}" -gt 0 ]; do conda deactivate >/dev/null 2>&1 || break; done; PATH="$(printf "%s" "$PATH" | tr ":" "\n" | grep -v "^/opt/conda/bin$" | grep -v "^/opt/conda/condabin$" | paste -sd ":" -)"; unset CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_PROMPT_MODIFIER PYTHONPATH; source /opt/ros/jazzy/setup.bash && source /opt/ros2_rust_ws/install/setup.bash && {{cmd}}'
@@ -40,14 +35,10 @@ topics:
 launch-foxglove:
     ros2 launch foxglove_bridge foxglove_bridge_launch.xml
 
-# Setup GauSS-MI conda environment
-setup-gaussmi:
-    bash /workspace/src/GauSS-MI-ros2/setup-gaussmi-env.sh
+# Bring up the ROS 2 container, the ROS 2 relay, and the ROS 1 GauSS-MI container.
+compose-up-gaussmi:
+    docker compose -f ../docker/docker-compose.yml up -d --build ros2 gaussmi_relay gaussmi_ros1
 
-# Launch GauSS-MI with active reconstruction config.
-launch-gaussmi-active:
-    bash -c 'source /opt/ros/jazzy/setup.bash && source /opt/ros2_rust_ws/install/setup.bash && source /opt/conda/etc/profile.d/conda.sh && cd /workspace && source install/setup.bash && conda activate GauSS-MI && ros2 launch gs_mapping gaussmi_active.launch.py'
-
-# Launch GauSS-MI with rosbag playback config.
-launch-gaussmi-rosbag:
-    bash -c 'source /opt/ros/jazzy/setup.bash && source /opt/ros2_rust_ws/install/setup.bash && source /opt/conda/etc/profile.d/conda.sh && cd /workspace && source install/setup.bash && conda activate GauSS-MI && ros2 launch gs_mapping gaussmi_rosbag_oildrum.launch.py'
+# Shut down the GauSS-MI stack.
+compose-down-gaussmi:
+    docker compose -f ../docker/docker-compose.yml down

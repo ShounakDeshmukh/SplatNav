@@ -8,19 +8,20 @@
 
 This project makes a Clearpath Jackal robot explore and map unknown areas entirely on its own. Instead of just driving around randomly to avoid walls, the robot actively looks at its own map, finds the blurry or incomplete areas, and drives there to get a better look.
 
-It combines four main pieces:
+It combines five main pieces:
 - **ROS 2 Jazzy & Gazebo:** The core software and simulation environment for the robot.
 - **PINGS:** A mapping tool that uses camera and LiDAR data to build two things at once: a highly detailed 3D visual map, and a flat 2D collision map so the robot doesn't crash.
-- **GauSS-MI:** The exploration "brain." It looks at the 3D map, calculates which areas need more data, and picks the next best coordinate for the robot to drive to.
+- **GauSS-MI:** The exploration "brain." It stays on the original ROS 1 Noetic stack from the author.
+- **Relay layer:** A small socket-based relay that forwards camera, depth, pose, and next-best-view data between ROS 2 and ROS 1.
 - **Rust (`rclrs`):** The main control program. It grabs the coordinates from the brain and sends them to the robot's driving system.
 
 ---
 
 ## How We Handle Software Conflicts
 
-The mapping algorithms (PINGS and GauSS-MI) were built by researchers using older software (ROS 1 and CUDA 11.8). Our robot uses the newest software (ROS 2 Jazzy and Ubuntu 24.04). 
+The mapping algorithms (PINGS and GauSS-MI) were built by researchers using older software (ROS 1 and CUDA 11.8). Our robot uses the newest software (ROS 2 Jazzy and Ubuntu 24.04).
 
-To prevent everything from breaking, we use a layered Docker setup. The entire system runs inside a modern ROS 2 Docker container, but the older mapping algorithms are safely locked inside their own isolated Conda environments. This lets the old math run perfectly while still talking to the modern robot.
+To prevent everything from breaking, we use a split Docker setup. The main robot stack runs inside a modern ROS 2 Docker container. GauSS-MI stays in its original ROS 1 Noetic container, and a small relay process forwards data between the two stacks over a local socket.
 
 ---
 
@@ -32,16 +33,16 @@ Gazebo Simulation (Jackal)
        ├─► Camera + LiDAR Data ────────────┐
        │                                   │
        ▼                                   ▼
-[ GauSS-MI Brain ]                  [ PINGS Mapper ]
-Finds blurry areas                  Builds the 3D map
+[ ROS 2 Jazzy Stack ]               [ GauSS-MI ROS 1 Container ]
+PINGS, Rust control, Nav2           Original ROS 1 exploration brain
        │                                   │
-       ├─► Next Target Coordinate          ├─► 2D Collision Map
+       ├─► Relay to ROS 1                ├─► Next Target Coordinate
        │                                   │
        ▼                                   ▼
-[ Rust Controller ]                 [ Navigation System ]
-Tells the robot to move             Stops the robot from crashing
+[ Socket Relay ]                   [ ROS 1 GauSS-MI Topics ]
+Forwards image/pose/NBV           /camera/bgr, /camera/depth, /camera/pose
        │                                   │
-       └──────────────► [ Nav2 ] ◄─────────┘
+       └──────────────► [ Nav2 / Controller ] ◄─────────┘
                            │
                            ▼
                  Drive Commands to Robot
@@ -58,11 +59,14 @@ rust-splat-nav/
 │   ├── Dockerfile
 │   └── docker-compose.yml
 │
+├── gaussmi/               # Original GauSS-MI ROS 1 source tree
+│
+├── relay/                 # Shared socket relay code between ROS 2 and ROS 1
+│
 ├── ros2_ws/               # Main workspace
 │   └── src/
 │       ├── rust_control/  # Rust control program
 │       ├── pings_ros2/    # PINGS mapping code
-│       ├── gauss_mi_ros2/ # GauSS-MI exploration code
 │       └── launch/        # Startup scripts
 │
 ├── logs/                  # Saved maps and test results
@@ -88,6 +92,8 @@ After cloning the repository, initialize and fetch submodules:
 ```bash
 git submodule update --init --recursive
 ```
+
+This fetches the original GauSS-MI ROS 1 code into gaussmi/.
 
 ### 1. Prepare the VM (required on every brand-new barebones VM)
 Any time you create a new barebones VM, run this first before anything else.
@@ -121,6 +127,19 @@ If you reboot later, you do not need to rerun `setupvm.bash`.
 ```bash
 cd docker
 docker compose build
+```
+
+To start the full stack with both ROS 2 and ROS 1 containers plus the relay:
+
+```bash
+cd ros2_ws
+just compose-up-gaussmi
+```
+
+To stop it:
+
+```bash
+just compose-down-gaussmi
 ```
 
 ### 3. Option A (VNC): SSH from your laptop and open the render tunnel
@@ -170,15 +189,29 @@ cd /workspace
 just launch-sim
 ```
 
+To run the GauSS-MI sidecar stack alongside the ROS 2 system:
+```bash
+cd /workspace
+just compose-up-gaussmi
+```
+
+The compose stack starts three services:
+- ros2: ROS 2 Jazzy robot and simulation stack
+- gaussmi_relay: ROS 2 relay node that forwards data over a socket
+- gaussmi_ros1: the original ROS 1 GauSS-MI container
+
+The relay forwards:
+- ROS 2 to ROS 1: /camera/bgr, /camera/depth, /camera/pose
+- ROS 1 to ROS 2: /gaussmi/nbv_pose
+
 Notes:
 - `docker-compose.yml` uses `network_mode: host`, which is required for SSH X11 forwarding because `localhost:10.0` must resolve to the host SSH tunnel, not container loopback.
 - `setup-x11.sh` supports both local/VNC displays (`:0`, `:1`) and SSH-forwarded displays (`localhost:10.0`).
 - `just launch-sim` sets `XDG_RUNTIME_DIR`, `GZ_PARTITION`, `IGN_PARTITION`, `GZ_IP`, and `IGN_IP` so Gazebo server/client and `ros_gz_sim` discover each other reliably.
 
-Inside the container, set up the isolated math environments:
+Inside the container, set up the isolated math environment for PINGS if needed:
 ```bash
 conda env create -f /workspace/src/pings_ros2/environment.yml
-conda env create -f /workspace/src/gauss_mi_ros2/environment.yml
 ```
 
 ---
@@ -206,7 +239,7 @@ source /workspace/install/setup.bash
 ## Project Phases
 
 **Phase 1 — Basic Setup:** Get the Jackal driving in Gazebo and ensure the Docker container can use the GPU.  
-**Phase 2 — Upgrading the Brain:** Rewrite the GauSS-MI code so it works with ROS 2 instead of ROS 1.  
+**Phase 2 — GauSS-MI Sidecar:** Keep GauSS-MI on ROS 1 and connect it to the ROS 2 stack with a relay.  
 **Phase 3 — Live Mapping:** Connect the PINGS mapper so it updates in real-time as the robot drives, rather than using pre-recorded data.  
 **Phase 4 — Rust Integration:** Write the Rust program that acts as the middleman between the brain and the wheels.  
 **Phase 5 — Full Autonomy:** Drop the robot into a simulated building and let it map the whole thing by itself.  

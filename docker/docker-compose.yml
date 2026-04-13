@@ -23,11 +23,80 @@ services:
       - /tmp/.docker.xauth:/tmp/.docker.xauth:ro
       # ROS2 workspace
       - ../ros2_ws:/workspace
+      # Shared relay protocol/scripts
+      - ../relay:/relay
       # Nerf datasets / models / scripts
       - ../nerf:/nerf
       # Logs and experiment outputs
       - ../logs:/logs
       # Clearpath config (mapped so you don't have to rebuild when changing sensors)
       - ./robot.yaml:/root/clearpath/robot.yaml:ro
+    stdin_open: true
+    tty: true
+
+  gaussmi_relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gaussmi_relay
+    network_mode: host
+    ipc: host
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=${DISPLAY:-:1}
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.docker.xauth
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /tmp/.docker.xauth:/tmp/.docker.xauth:ro
+      - ../ros2_ws:/workspace
+      - ../relay:/relay
+    command: >
+      bash -lc "source /opt/ros/jazzy/setup.bash && cd /workspace && \
+      colcon build --packages-select gaussmi_relay --symlink-install && \
+      source install/setup.bash && \
+      ros2 run gaussmi_relay ros2_side --ros-args \
+      -p rgb_topic:=/j100/sensors/camera_0/color/image \
+      -p depth_topic:=/j100/sensors/camera_0/depth/image \
+      -p pose_topic:= \
+      -p odom_topic:=/j100/platform/odom/filtered \
+      -p nbv_topic:=/gaussmi/nbv_pose"
+    stdin_open: true
+    tty: true
+
+  gaussmi_ros1:
+    image: johanna17/gauss-mi:v1
+    container_name: gaussmi_ros1
+    # ROS 1 Noetic container for the original GauSS-MI codebase.
+    # This runs alongside the ROS 2 container, but topic exchange requires a bridge later.
+    network_mode: host
+    ipc: host
+    runtime: nvidia
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=${DISPLAY:-:1}
+      - QT_X11_NO_MITSHM=1
+      - XAUTHORITY=/tmp/.docker.xauth
+      - ROS_MASTER_URI=http://127.0.0.1:11311
+      - ROS_IP=127.0.0.1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /tmp/.docker.xauth:/tmp/.docker.xauth:ro
+      - ../relay:/relay:ro
+      - ../logs:/logs
+      - /dev:/dev
+    working_dir: /home/do
+    user: do
+    command: >
+      bash -lc "source /opt/ros/noetic/setup.bash && \
+      roscore >/tmp/roscore.log 2>&1 & \
+      sleep 3 && exec python3 /relay/ros1/gaussmi_ros1_relay.py --host 127.0.0.1 --port 50051"
     stdin_open: true
     tty: true

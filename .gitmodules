@@ -1,6 +1,3 @@
-[submodule "docker/gaussmi"]
-	path = docker/gaussmi
-	url = https://github.com/JohannaXie/GauSS-MI.git
 [submodule "gaussmi"]
 	path = gaussmi
 	url = https://github.com/JohannaXie/GauSS-MI.git

@@ -94,34 +94,6 @@ RUN mkdir -p /workspace/src
 WORKDIR /workspace
 
 # -----------------------
-# Helper to create GauSS-MI conda env from mounted submodule (optional - user setup)
-# Note: Users can set up conda manually if needed by installing miniconda/mambaforge
-# -----------------------
-# RUN cat <<'EOF' > /usr/local/bin/setup-gaussmi-env
-# #!/usr/bin/env bash
-# set -euo pipefail
-#
-# ENV_FILE="/workspace/src/GauSS-MI-ros2/environment.yml"
-#
-# if [[ ! -f "${ENV_FILE}" ]]; then
-#     echo "GauSS-MI env file not found at ${ENV_FILE}." >&2
-#     echo "Make sure submodules are initialized and /workspace is mounted." >&2
-#     exit 1
-# fi
-#
-# if conda env list | awk '{print $1}' | grep -qx "GauSS-MI"; then
-#     echo "Conda env GauSS-MI already exists."
-#     exit 0
-# fi
-#
-# echo "Creating GauSS-MI conda environment from ${ENV_FILE} ..."
-# conda env create -f "${ENV_FILE}"
-# echo "Done. Activate with: conda activate GauSS-MI"
-# EOF
-#
-# RUN chmod +x /usr/local/bin/setup-gaussmi-env
-
-# -----------------------
 # Source ROS automatically (Both Jazzy and the Rust underlay)
 # -----------------------
 RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc && \
