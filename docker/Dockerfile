@@ -2,7 +2,22 @@
 FROM osrf/ros:jazzy-desktop
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Force HTTPS apt sources to avoid signature issues through HTTP interception/proxies.
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list ]; then \
+        sed -i \
+            -e 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g' \
+            -e 's|http://security.ubuntu.com|https://security.ubuntu.com|g' \
+            /etc/apt/sources.list; \
+    fi; \
+    if [ -d /etc/apt/sources.list.d ]; then \
+        find /etc/apt/sources.list.d -type f \( -name '*.list' -o -name '*.sources' \) -print0 | \
+            xargs -0 -r sed -i \
+                -e 's|http://packages.ros.org/ros2/ubuntu|https://packages.ros.org/ros2/ubuntu|g' \
+                -e 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g' \
+                -e 's|http://security.ubuntu.com|https://security.ubuntu.com|g'; \
+    fi
 
 # -----------------------
 # System dependencies
@@ -43,61 +58,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------
-# Install colcon plugins for Rust
-# -----------------------
-RUN pip install --break-system-packages colcon-cargo colcon-ros-cargo
-
-# -----------------------
-# Install Rust
-# -----------------------
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
-
-# -----------------------
-# Install Heavy Python Dependencies First (for better Docker caching)
-# (Commented out: Nerfstudio requires an NVIDIA GPU. Uncomment if moving to a GPU machine)
-# -----------------------
-# RUN pip install --default-timeout=1000 --no-cache-dir --break-system-packages open3d torch torchvision
-
-# -----------------------
-# Install Nerfstudio
-# (Commented out: Requires NVIDIA GPU for tiny-cuda-nn and training)
-# -----------------------
-# RUN pip install --default-timeout=1000 --no-cache-dir --break-system-packages nerfstudio
-
-
-RUN mkdir -p /opt/ros2_rust_ws/src
-WORKDIR /opt/ros2_rust_ws
-
-# -----------------------
-# Clone ROS2 interface repos for ros2_rust
-# -----------------------
-# Note: The ros2_rust repo specifically notes we need test-msgs and example-interfaces installed
-# via apt (handled above) as a workaround. No need to clone `test_interface_files` yourself for Jazzy.
-RUN git clone -b jazzy https://github.com/ros2/common_interfaces.git src/common_interfaces && \
-    git clone -b jazzy https://github.com/ros2/example_interfaces.git src/example_interfaces && \
-    git clone -b jazzy https://github.com/ros2/rcl_interfaces.git src/rcl_interfaces && \
-    git clone -b jazzy https://github.com/ros2/rosidl_core.git src/rosidl_core && \
-    git clone -b jazzy https://github.com/ros2/rosidl_defaults.git src/rosidl_defaults && \
-    git clone -b jazzy https://github.com/ros2/unique_identifier_msgs.git src/unique_identifier_msgs && \
-    git clone https://github.com/ros2-rust/rosidl_rust.git src/rosidl_rust && \
-    git clone https://github.com/ros2-rust/examples.git src/examples
-
-# -----------------------
-# Build the worksapce for ros2_rust
-# -----------------------
-RUN bash -c "source /opt/ros/jazzy/setup.sh && colcon build"
-
-# -----------------------
 # Prepare your personal workspace
 # -----------------------
 RUN mkdir -p /workspace/src
 WORKDIR /workspace
 
 # -----------------------
-# Source ROS automatically (Both Jazzy and the Rust underlay)
+# Source ROS automatically
 # -----------------------
 RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc && \
-    echo "source /opt/ros2_rust_ws/install/setup.bash" >> /root/.bashrc && \
     echo "alias cls=clear" >> /root/.bashrc
 
 # -----------------------

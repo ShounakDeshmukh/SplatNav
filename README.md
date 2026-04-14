@@ -1,4 +1,4 @@
-# RustSplatNav: Autonomous 3D Mapping with ROS 2 and Rust
+# SplatNav: Autonomous 3D Mapping with ROS 2 and Python
 
 > **It is a robot that can be dropped into a completely unknown environment and autonomously drive itself around until it has built a mathematically perfect, photorealistic 3D replica of that environment, without a human ever touching a joystick.**
 
@@ -13,7 +13,7 @@ It combines five main pieces:
 - **PINGS:** A mapping tool that uses camera and LiDAR data to build two things at once: a highly detailed 3D visual map, and a flat 2D collision map so the robot doesn't crash.
 - **GauSS-MI:** The exploration "brain." It stays on the original ROS 1 Noetic stack from the author.
 - **Relay layer:** A small socket-based relay that forwards camera, depth, pose, and next-best-view data between ROS 2 and ROS 1.
-- **Rust (`rclrs`):** The main control program. It grabs the coordinates from the brain and sends them to the robot's driving system.
+- **Python (`rclpy`):** The main control program. It grabs the coordinates from the brain and sends them to the robot's driving system.
 
 ---
 
@@ -34,7 +34,7 @@ Gazebo Simulation (Jackal)
        │                                   │
        ▼                                   ▼
 [ ROS 2 Jazzy Stack ]               [ GauSS-MI ROS 1 Container ]
-PINGS, Rust control, Nav2           Original ROS 1 exploration brain
+PINGS, Python control, Nav2         Original ROS 1 exploration brain
        │                                   │
        ├─► Relay to ROS 1                ├─► Next Target Coordinate
        │                                   │
@@ -53,7 +53,7 @@ Forwards image/pose/NBV           /camera/bgr, /camera/depth, /camera/pose
 ## Repository Structure
 
 ```text
-rust-splat-nav/
+splat-nav/
 │
 ├── docker/                # Setup files for the container and Conda
 │   ├── Dockerfile
@@ -65,9 +65,9 @@ rust-splat-nav/
 │
 ├── ros2_ws/               # Main workspace
 │   └── src/
-│       ├── rust_control/  # Rust control program
-│       ├── pings_ros2/    # PINGS mapping code
-│       └── launch/        # Startup scripts
+│       ├── spin_robot_node/ # Simple Python controller
+│       ├── gaussmi_relay/   # ROS 2 relay code
+│       └── launch/          # Startup scripts
 │
 ├── logs/                  # Saved maps and test results
 └── README.md
@@ -129,11 +129,18 @@ cd docker
 docker compose build
 ```
 
-To start the full stack with both ROS 2 and ROS 1 containers plus the relay:
+To start the core stack with ROS 2 and the relay:
 
 ```bash
 cd ros2_ws
 just compose-up-gaussmi
+```
+
+To include the optional ROS 1 GauSS-MI sidecar:
+
+```bash
+cd ros2_ws
+just compose-up-gaussmi-ros1
 ```
 
 To stop it:
@@ -195,9 +202,11 @@ cd /workspace
 just compose-up-gaussmi
 ```
 
-The compose stack starts three services:
+The compose stack starts the core services:
 - ros2: ROS 2 Jazzy robot and simulation stack
 - gaussmi_relay: ROS 2 relay node that forwards data over a socket
+
+The optional ROS 1 sidecar is only started with the gaussmi profile:
 - gaussmi_ros1: the original ROS 1 GauSS-MI container
 
 The relay forwards:
@@ -225,13 +234,13 @@ cd /workspace
 colcon build --symlink-install
 ```
 
-To build only the Rust controller:
+To build and run the Python controller:
 ```bash
 source /opt/ros/jazzy/setup.bash
-source /opt/ros2_rust_ws/install/setup.bash
 cd /workspace
-colcon build --packages-select rust_control --symlink-install
+colcon build --packages-select spin_robot_node --symlink-install
 source /workspace/install/setup.bash
+ros2 run spin_robot_node spin_robot_node
 ```
 
 ---
@@ -241,7 +250,7 @@ source /workspace/install/setup.bash
 **Phase 1 — Basic Setup:** Get the Jackal driving in Gazebo and ensure the Docker container can use the GPU.  
 **Phase 2 — GauSS-MI Sidecar:** Keep GauSS-MI on ROS 1 and connect it to the ROS 2 stack with a relay.  
 **Phase 3 — Live Mapping:** Connect the PINGS mapper so it updates in real-time as the robot drives, rather than using pre-recorded data.  
-**Phase 4 — Rust Integration:** Write the Rust program that acts as the middleman between the brain and the wheels.  
+**Phase 4 — Python Control:** Keep the controller simple and readable with `rclpy`.  
 **Phase 5 — Full Autonomy:** Drop the robot into a simulated building and let it map the whole thing by itself.  
 
 ---

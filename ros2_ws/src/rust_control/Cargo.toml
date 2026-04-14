@@ -1,3 +1,0 @@
-[workspace]
-members = ["spin_robot_node"]
-resolver = "2"
