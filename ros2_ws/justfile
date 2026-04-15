@@ -14,10 +14,6 @@ source-ros cmd:
 # Run the Python controller node. Set mode=nbv to chase /gaussmi/nbv_pose.
 run-controller mode="spin": (source-ros "cd /workspace && colcon build --packages-select spin_robot_node --symlink-install && source /workspace/install/setup.bash && ros2 run spin_robot_node spin_robot_node --ros-args -p mode:={{mode}}")
 
-# Launch Nav2 + NBV bridge for active demo.
-launch-nav2-nbv:
-    bash --noprofile --norc -c 'source /opt/ros/jazzy/setup.bash && cd /workspace && colcon build --packages-select spin_robot_node --symlink-install && source install/setup.bash && ros2 launch spin_robot_node nav2_nbv_demo.launch.py'
-
 # Launch the Jackal simulation using hardware OpenGL by default.
 # `renderer` can be `ogre` or `ogre2`.
 launch-sim rviz="" renderer="ogre2" extra_args="":

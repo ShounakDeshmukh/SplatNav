@@ -125,15 +125,6 @@ ros2 run spin_robot_node spin_robot_node --ros-args -p mode:=nbv
 
 In `nbv` mode it uses `/j100/platform/odom/filtered` plus `/gaussmi/nbv_pose` and drives toward the selected viewpoint instead of only spinning in place.
 
-For the full Nav2 demo path, use:
-
-```bash
-cd /workspace
-just launch-nav2-nbv
-```
-
-That starts Nav2, SLAM Toolbox, and the NBV bridge that forwards GauSS-MI goals to `/navigate_to_pose`.
-
 ## Common Commands
 
 - Build ROS workspace: `just build`
