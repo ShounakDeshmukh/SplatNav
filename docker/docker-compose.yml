@@ -66,11 +66,9 @@ services:
     tty: true
 
   gaussmi_ros1:
-    build:
-      context: .
-      dockerfile: Dockerfile.gaussmi_ros1_sidecar
+    image: johanna17/gauss-mi:v1
     container_name: gaussmi_ros1
-    # Minimal ROS 1 Noetic sidecar for relay + roscore only.
+    # Official GauSS-MI image from the upstream README.
     network_mode: host
     ipc: host
     environment:
@@ -83,6 +81,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /tmp/.docker.xauth:/tmp/.docker.xauth:ro
       - ../relay:/relay:ro
+      - ../gaussmi:/home/do/ws_gaussmi/src/GauSS-MI
       - ../logs:/logs
     working_dir: /workspace
     command: >

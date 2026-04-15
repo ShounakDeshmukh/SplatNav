@@ -1,3 +1,5 @@
+from glob import glob
+
 from setuptools import find_packages, setup
 
 package_name = 'spin_robot_node'
@@ -9,6 +11,8 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages', [f'resource/{package_name}']),
         (f'share/{package_name}', ['package.xml']),
+        (f'share/{package_name}/launch', glob('launch/*.launch.py')),
+        (f'share/{package_name}/config', glob('config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -19,6 +23,7 @@ setup(
     entry_points={
         'console_scripts': [
             'spin_robot_node = spin_robot_node.spin_robot_node:main',
+            'nbv_nav2_bridge = spin_robot_node.nbv_nav2_bridge:main',
         ],
     },
 )

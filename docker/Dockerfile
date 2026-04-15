@@ -44,6 +44,8 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-test-msgs \
     ros-jazzy-test-interface-files \
     ros-jazzy-nav2-bringup \
+    ros-jazzy-nav2-map-server \
+    ros-jazzy-slam-toolbox \
     ros-jazzy-ros-gz \
     ros-jazzy-clearpath-simulator \
     ros-jazzy-clearpath-desktop \

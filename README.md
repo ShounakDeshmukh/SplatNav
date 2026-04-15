@@ -7,7 +7,7 @@ ROS 2 Jazzy + Gazebo Jackal stack with a simple Python controller and a ROS 1 Ga
 - Rust has been fully removed.
 - Controller is now Python (`rclpy`) in `spin_robot_node`.
 - ROS 2 image is lean and does not include conda.
-- GauSS-MI stays in a separate ROS 1 image (`johanna17/gauss-mi:v1`).
+- GauSS-MI stays in the official ROS 1 image (`johanna17/gauss-mi:v1`) from the upstream README.
 - ROS 1/ROS 2 communication uses the socket relay under `relay/` + `gaussmi_relay`.
 
 ## Architecture
@@ -84,7 +84,7 @@ just compose-up-gaussmi
 This starts:
 - `ros2` (ROS 2 Jazzy stack)
 - `gaussmi_relay` (ROS 2 bridge node)
-- `gaussmi_ros1` (ROS 1 sidecar image)
+- `gaussmi_ros1` (official GauSS-MI image)
 
 Stop all:
 
@@ -116,6 +116,23 @@ just run-controller
 ```
 
 This publishes `TwistStamped` to `/j100/cmd_vel`.
+
+To run it as a simple active-exploration controller that follows the best-next-view pose published on `/gaussmi/nbv_pose`, pass:
+
+```bash
+ros2 run spin_robot_node spin_robot_node --ros-args -p mode:=nbv
+```
+
+In `nbv` mode it uses `/j100/platform/odom/filtered` plus `/gaussmi/nbv_pose` and drives toward the selected viewpoint instead of only spinning in place.
+
+For the full Nav2 demo path, use:
+
+```bash
+cd /workspace
+just launch-nav2-nbv
+```
+
+That starts Nav2, SLAM Toolbox, and the NBV bridge that forwards GauSS-MI goals to `/navigate_to_pose`.
 
 ## Common Commands
 
