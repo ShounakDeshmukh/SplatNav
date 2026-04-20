@@ -14,6 +14,10 @@ source-ros cmd:
 # Run the Python controller node. Set mode=nbv to chase /gaussmi/nbv_pose.
 run-controller mode="spin": (source-ros "cd /workspace && colcon build --packages-select spin_robot_node --symlink-install && source /workspace/install/setup.bash && ros2 run spin_robot_node spin_robot_node --ros-args -p mode:={{mode}}")
 
+# Launch Clearpath Nav2 demo stack (Nav2 + SLAM) and NBV bridge.
+launch-nav2-nbv:
+    bash --noprofile --norc -c 'source /opt/ros/jazzy/setup.bash && cd /workspace && colcon build --packages-select spin_robot_node --symlink-install && source install/setup.bash && ros2 launch spin_robot_node clearpath_nav2_nbv.launch.py'
+
 # Launch the Jackal simulation using hardware OpenGL by default.
 # `renderer` can be `ogre` or `ogre2`.
 launch-sim rviz="" renderer="ogre2" extra_args="":
@@ -42,3 +46,11 @@ compose-up-gaussmi:
 # Shut down the GauSS-MI stack.
 compose-down-gaussmi:
     docker compose -f ../docker/docker-compose.yml down
+
+# Run GauSS-MI active mapping in the ROS1 sidecar (writes results under ../gaussmi/results).
+run-gaussmi-active:
+    docker exec -it gaussmi_ros1 bash -lc 'source /opt/ros/noetic/setup.bash && source /opt/conda/etc/profile.d/conda.sh && conda activate GauSS-MI && cd /home/do/ws_gaussmi && source devel/setup.bash && roslaunch gs_mapping gaussmi_active.launch'
+
+# Print the latest generated splat on host.
+latest-splat:
+    bash --noprofile --norc -c 'latest=$$(find ../gaussmi/results -type f -path "*/final/point_cloud.ply" 2>/dev/null | sort | tail -n 1); if [[ -n "$$latest" ]]; then echo "$$latest"; else echo "No splat yet under ../gaussmi/results"; fi'

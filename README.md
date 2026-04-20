@@ -100,6 +100,14 @@ cd /workspace
 just launch-sim
 ```
 
+`just launch-sim` now tries GUI first when X11 is reachable and automatically falls back to headless mode if GUI startup fails.
+
+To force GUI mode only:
+
+```bash
+just launch-sim-ui
+```
+
 If GPU rendering is flaky, use:
 
 ```bash
@@ -124,6 +132,39 @@ ros2 run spin_robot_node spin_robot_node --ros-args -p mode:=nbv
 ```
 
 In `nbv` mode it uses `/j100/platform/odom/filtered` plus `/gaussmi/nbv_pose` and drives toward the selected viewpoint instead of only spinning in place.
+
+## Nav2 Integration (Clearpath Demos)
+
+Inside `ros2_jackal_nerf`:
+
+```bash
+cd /workspace
+just launch-nav2-nbv
+```
+
+This launches Clearpath's Nav2 demo stack (`clearpath_nav2_demos` Nav2 + SLAM) and starts the NBV bridge node that forwards `/gaussmi/nbv_pose` goals to `/navigate_to_pose`.
+
+## Generate and Retrieve a Splat
+
+1. Bring up the stack from `ros2_ws`:
+
+```bash
+just compose-up-gaussmi
+```
+
+2. In another shell, start GauSS-MI active mapping:
+
+```bash
+cd /home/sdeshmu4/RustSplatNav/ros2_ws
+just run-gaussmi-active
+```
+
+3. After the run completes, print the latest generated PLY on the host:
+
+```bash
+cd /home/sdeshmu4/RustSplatNav/ros2_ws
+just latest-splat
+```
 
 ## Common Commands
 

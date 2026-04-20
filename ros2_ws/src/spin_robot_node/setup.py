@@ -23,6 +23,7 @@ setup(
     entry_points={
         'console_scripts': [
             'spin_robot_node = spin_robot_node.spin_robot_node:main',
+            'nbv_nav2_bridge = spin_robot_node.nbv_nav2_bridge:main',
         ],
     },
 )

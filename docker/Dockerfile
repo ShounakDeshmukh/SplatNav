@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-ros-gz \
     ros-jazzy-clearpath-simulator \
     ros-jazzy-clearpath-desktop \
+    ros-jazzy-clearpath-nav2-demos \
     ros-jazzy-foxglove-bridge \
     vim \
     nano \
